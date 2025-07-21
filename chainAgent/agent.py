@@ -236,7 +236,9 @@ vccreate_agent = LlmAgent(
 
 
 
-root_agent = SequentialAgent(
+root_agent = LlmAgent(
        name="create_wallet_vc",
+       model="gemini-2.5-flash",
+        instruction="创建钱包使用wallet_agent,vc认证调用vccreate_agent，且需要有钱包地址wallet_address,如果没有可以用wallet_agent创建，然后再创建vc证书",
        sub_agents=[wallet_agent,vccreate_agent]
 )
