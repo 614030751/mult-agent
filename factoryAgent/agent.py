@@ -3,17 +3,9 @@ from google.adk.agents.invocation_context import InvocationContext
 from google.adk.events import Event
 from typing import AsyncGenerator
 from typing_extensions import override
-import logging
 from google.adk.sessions import InMemorySessionService
 from google.adk.runners import Runner
 from google.genai import types
-
-# 配置logger
-logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
 
 count_number = 1000000000
 tire_number = 10000
@@ -74,7 +66,7 @@ class FactoryChain(BaseAgent):
         - 时间安排：预计到达时间
         """
         tire_transport_agent = LlmAgent(
-            name="tire_transport",
+            name="tire_transport_agent",
             model="gemini-2.5-flash",
             description="轮胎专用物流运输Agent",
             instruction=tire_transport_instruction,
@@ -112,7 +104,7 @@ class FactoryChain(BaseAgent):
         - 时间安排：预计到达时间
         """
         battery_transport_agent = LlmAgent(
-            name="battery_transport",
+            name="battery_transport_agent",
             model="gemini-2.5-flash", 
             description="电池包专用物流运输Agent",
             instruction=battery_transport_instruction,
@@ -130,7 +122,7 @@ class FactoryChain(BaseAgent):
         - 财务记录：交易流水号
         """
         battery_trade_agent = LlmAgent(
-            name="battery_trade",
+            name="battery_trade_agent",
             model="gemini-2.5-flash",
             description="电池包交易结算Agent", 
             instruction=battery_trade_instruction,
@@ -150,7 +142,7 @@ class FactoryChain(BaseAgent):
         - 时间安排：预计到达时间
         """
         frame_transport_agent = LlmAgent(
-            name="frame_transport",
+            name="frame_transport_agent",
             model="gemini-2.5-flash",
             description="车架专用物流运输Agent",
             instruction=frame_transport_instruction,
@@ -168,7 +160,7 @@ class FactoryChain(BaseAgent):
         - 财务记录：交易流水号
         """
         frame_trade_agent = LlmAgent(
-            name="frame_trade",
+            name="frame_trade_agent",
             model="gemini-2.5-flash", 
             description="车架交易结算Agent",
             instruction=frame_trade_instruction,
@@ -176,19 +168,19 @@ class FactoryChain(BaseAgent):
         )
 
         seq_tire_agent = SequentialAgent(
-            name="seq_tire",
+            name="seq_tire_agent",
             description="轮胎供应链完整流程管理：从订单确认→物流配送→财务结算，确保轮胎按时按质交付并完成全流程闭环管理",
             sub_agents=[tire_supply_agent, tire_transport_agent, tire_trade_agent]
         )
 
         seq_battery_agent = SequentialAgent(
-            name="seq_battery",
+            name="seq_battery_agent",
             description="新能源电池包全链路管理：专业处理BATT-PACK-MODEL-X电池包的技术确认→安全运输→资金结算，严格执行新能源汽车电池安全标准",
             sub_agents=[batter_supply_agent, battery_transport_agent, battery_trade_agent]
         )
 
         seq_frame_agent = SequentialAgent(
-            name="seq_frame",
+            name="seq_frame_agent",
             description="汽车车架制造交付流程：高强度钢车架从生产质检→专业运输→付款结算的完整供应链管理，确保车架结构安全和交付质量",
             sub_agents=[frame_supply_agent, frame_transport_agent, frame_trade_agent]
         )
@@ -244,31 +236,19 @@ class FactoryChain(BaseAgent):
         Yields:
             Event: 各个子Agent执行过程中产生的事件流
         """
-        logger.info(f"[{self.name}] 开始执行工厂供应链流程...")
-
-        logger.info(f"[{self.name}] Running plan_agent")
         async for event in self.plan_agent.run_async(ctx):
-             logger.info(f"[{self.name}] Event from plan_agent: {event.model_dump_json(indent=2, exclude_none=True)}")
              yield event
         
         if "plan_result" not in ctx.session.state or not ctx.session.state["plan_result"]:
-            logger.error(f"[{self.name}] 生成任务失败")
             return
         
-        logger.info(f"[{self.name}] plan_agent执行完毕: {ctx.session.state.get('plan_result')}")
-
-        logger.info(f"[{self.name}] Running paraAgent")
         async for event in self.para_agent.run_async(ctx):
-            logger.info(f"[{self.name}] Event from para_agent {event.model_dump_json(indent=2, exclude_none=True)}")
             yield event
-        
-        logger.info(f"[{self.name}]para_agent执行完毕")
-        logger.info(f"[{self.name}]para_result:{ctx.session.state.get('para_result')}")
         
 
 
 plan_agent = LlmAgent(
-    name="plan",
+    name="plan_agent",
     model="gemini-2.5-flash",
     description="将生产计划进行拆分，让不同的agent进行任务的执行",
     instruction="""
@@ -317,7 +297,7 @@ tire_supply_agent = LlmAgent(
 )
 
 batter_supply_agent = LlmAgent(
-    name="battery_supply",
+    name="battery_supply_agent",
     model="gemini-2.5-flash",
     description="电池包供应商Agent，负责电池包的采购、库存管理和出库配送",
     instruction=f"""
@@ -340,7 +320,7 @@ batter_supply_agent = LlmAgent(
 )
 
 frame_supply_agent = LlmAgent(
-    name="frame_supply",
+    name="frame_supply_agent",
     model="gemini-2.5-flash", 
     description="车架供应商Agent，负责车架的生产、质检和出库配送",
     instruction=f"""
@@ -364,7 +344,7 @@ frame_supply_agent = LlmAgent(
 )
 
 transport_agent = LlmAgent(
-    name="transport",
+    name="transport_agent",
     model="gemini-2.5-flash",
     description="物流运输Agent，负责规划最优运输路线、车辆调度和货物跟踪",
     instruction=f"""
@@ -397,7 +377,7 @@ transport_agent = LlmAgent(
 )
 
 trade_agent = LlmAgent(
-    name="trade",
+    name="trade_agent",
     model="gemini-2.5-flash",
     description="财务交易Agent，负责处理供应商付款、结算和财务记录",
     instruction=f"""
@@ -433,83 +413,10 @@ trade_agent = LlmAgent(
 )
 
 factory_agent = FactoryChain(
-    name = "FactoryFlowAgent",
+    name = "FactoryFlow_Agent",
     plan_agent = plan_agent,
     tire_supply_agent = tire_supply_agent,
     batter_supply_agent = batter_supply_agent,  # 修正参数名
     frame_supply_agent = frame_supply_agent,
     transport_agent = transport_agent,
     trade_agent = trade_agent)
-
-INITIAL_STATE = {"topic": "a brave kitten exploring ahaunted house"}
-
-async def setup_session_and_runner():
-    session_service = InMemorySessionService()
-    session = await session_service.create_session(
-        app_name="plan",
-        user_id="factory_user_001", 
-        session_id="qzh",
-        state=INITIAL_STATE
-    )
-    logger.info(f"Initial session state: {session.state}")
-    runner = Runner(
-        agent=factory_agent,
-        app_name="plan",
-        session_service=session_service
-    )
-    return runner, session_service
-
-
-async def call_agent_async(user_input: str):
-    """
-    ​​向代理发送一个新主题（如有需要，可覆盖初始主题）并执行工作流。​
-
-    """
-    runner, session_service = await setup_session_and_runner()
-    current_session = await session_service.get_session(
-        app_name="plan", 
-        user_id="factory_user_001",
-        session_id="qzh"
-    )
-    
-    if not current_session:
-        logger.error("Session not found")
-        return
-    
-    current_session.state["topic"] = user_input
-    logger.info(f"Updated session state topic to: {user_input}")
-    content = types.Content(role='user', parts=[types.Part(text=user_input)])
-    events = runner.run_async(user_id="factory_user_001", session_id="qzh", new_message=content)
-    final_response = "No final response captured."
-    async for event in events:
-        if event.is_final_response() and event.content and event.content.parts:
-            logger.info(f"Potential final response from [{event.author}]: {event.content.parts[0].text}")
-            final_response = event.content.parts[0].text
-    
-    print("\n--- Agent Interaction Result ---")
-    print("Agent Final Response: ", final_response)
-
-    final_session = await session_service.get_session(app_name="plan", 
-                                                user_id="factory_user_001", 
-                                                session_id="qzh")
-    
-    print("Final Session State:")
-    import json
-    print(json.dumps(final_session.state, indent=2))
-    print("-------------------------------\n")
-
-# --- Run the Agent ---
-async def main():
-    """主入口函数"""
-    # 示例1：生产1000辆新能源汽车
-    print("🏭 开始执行工厂供应链流程...")
-    await call_agent_async("生产1000辆新能源汽车")
-    
-    # 你可以修改这里的输入来测试不同的生产需求：
-    # await call_agent_async("生产500辆电动汽车")
-    # await call_agent_async("紧急生产200辆车架，需要在一周内完成")
-    # await call_agent_async("生产2000辆新能源汽车，要求高质量标准")
-
-if __name__ == "__main__":
-    import asyncio
-    asyncio.run(main())

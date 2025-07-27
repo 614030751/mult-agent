@@ -1,0 +1,14 @@
+[project]
+name = "mult-agent"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "a2a>=0.44",
+    "a2a-sdk>=0.2.16",
+    "fastapi>=0.116.1",
+    "google-adk>=1.8.0",
+    "uvicorn[standard]>=0.35.0",
+    "websockets>=15.0.1",
+]
